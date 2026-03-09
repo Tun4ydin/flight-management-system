@@ -349,6 +349,7 @@ void flight_menu(Flight* flight)
         char gender;
         switch (choice) {
             case 1:
+                cin.ignore(1000, '\n');
                 // Yolcu bilgilerini gir
                 flight->flightDisplay();
                 cout << "Enter Passengers Name: ";
@@ -363,9 +364,6 @@ void flight_menu(Flight* flight)
                     {
                         cout << "Please enter a valid gender." << endl;
                     }
-                    
-                    cin.clear();
-                    cin.ignore(1000, '\n');
                 } while (gender != 'M' && gender != 'F' && gender != 'O');
                 seat = "";
                 flight->reserveSeat(Passenger(name, surname, gender));
