@@ -1,10 +1,15 @@
-#include "FlightSystem.h"
+#include "202411008_labproj1_FlightSystem.h"
 #include <iostream>
 #include <iomanip>
 #include <cctype>
 #include <algorithm>
 
 using namespace std;
+// Eğlencesine eklediğim bi şey kodda yeri yok cout << RED << "metin" << RESET; diye çalışıyor
+#define RED "\033[31m"
+#define GREEN "\033[32m"
+#define RESET "\033[0m"
+
 // Passenger getter setterları ve initializerları
 Passenger::Passenger(): name(""), surname(""), gender(' '){}
 Passenger::Passenger(string n, string s, char g): name(n), surname(s), gender(g){}
@@ -33,14 +38,12 @@ Flight::Flight(string f, string d, int m, int p):flightNo(f), destination(d), ma
     // Girdi koruma
     if(maxSeats > 80)
         maxSeats = 80;
-
+    // p tek sayı girilirse yolcu  sayısını 1 arttır
     if(maxSeats % 2 != 0)
         maxSeats++;
     // P 80 den küçük olursa p yi kaale al olmazsa maxseatı
     // numPassengers memory alloc kısmında patlayabilir 8 yolcu varken 40 yolcu kösterebilir
     int initialToCreate = min(p, maxSeats);
-    // koltuk formatı
-    char letters[4] = {'A','B','C','D'};
     // İstenilen yolcu kadar yolcu oluşturmaya çalış
     for(int i = 0; i < initialToCreate; i++)
     {
@@ -59,7 +62,7 @@ Flight::Flight(string f, string d, int m, int p):flightNo(f), destination(d), ma
             gender = toupper(static_cast<unsigned char>(seat[0]));
             if(gender != 'M' && gender != 'F' && gender != 'O')
             {
-                cout << "Please enter a valid gender." << endl;
+                cout  << "Please enter a valid gender."  << endl;
             }
             // bufferı temizlemek için
             cin.clear();
@@ -68,16 +71,9 @@ Flight::Flight(string f, string d, int m, int p):flightNo(f), destination(d), ma
         // herhangi istenmeyen input girilmesin
         seat = "";
         Passenger temp(name,surname,gender);
-        // i/4 1 2 3 ü
-        // i%4 A B C yi belirler
-        int row = (i / 4) + 1;
-        int col = i % 4;
-        // yolcunun koltuğuna ata
-        temp.seat = to_string(row) + letters[col];
-        // yolcuyu ekle
-        passangers.push_back(temp);
-        // yolcu sayısını arttır
-        numPassangers++;
+        this->reserveSeat(temp);
+        cin.clear();
+        cin.ignore(1000, '\n');
     }
 }
 // Boş initializer
@@ -144,11 +140,9 @@ void Flight::reserveSeat(const Passenger& passenger)
     // Kapasiteden daha fazla yolcu eklemeyi önler
     if (numPassangers >= maxSeats)
     {
-        cout << "Flight is full" << endl;
+        cout  << "Flight is full"  << endl;
         return;
     }
-    // Menü de işlem yaparken bufferda girdi kalıyor
-    cin.ignore(1000, '\n');
     string choice;
     bool flag = false;
     // Yolcuların bilgilerinin girildiği ve girdilerin doğruluğunu kontrol etme
@@ -156,10 +150,11 @@ void Flight::reserveSeat(const Passenger& passenger)
     {
         cout << "Enter Seat ID (e.g., 1A): ";
         cin >> choice;
-    
+        // 1a -> 1A
+        transform(choice.begin(), choice.end(), choice.begin(), ::toupper);
         if(!validseat(choice))
         {
-            cout << "Invalid seat ID" << endl;
+            cout  << "Invalid seat ID"  << endl;
             continue;
         }
         bool occupied = false;
@@ -174,13 +169,13 @@ void Flight::reserveSeat(const Passenger& passenger)
         // girlen koltuğun dolu olup olmadığını kontrol etme
         if (occupied)
         {
-            cout << "That seat is already taken." << endl;
+            cout  << "That seat is already taken."  << endl;
         } else
         {
             passenger.seat = choice;
             passangers.push_back(passenger);
             numPassangers++;
-            cout << "Seat " << choice << " reserved for " << passenger.getName() << endl;
+            cout  << "Seat "  << choice  << " reserved for "  << passenger.getName() << endl;
             flag = true;
         }
     }
@@ -201,7 +196,14 @@ bool Flight::validseat(const string& s)
             return false;
 
         int row = stoi(numberPart);
-
+        
+    if(row%4)
+    {
+        if(letter < 'A' || letter > 'B')
+            return false;
+        return row >= 1 && row <= maxSeats/4 + 1;
+    }
+    else
         return row >= 1 && row <= maxSeats/4;
 
 }
@@ -215,11 +217,11 @@ void Flight::cancelReservation(const string& seatID)
         {
             passangers.delete_at(i);
             numPassangers--;
-            cout << "Reservation for seat " << seatID << " canceled." << endl;
+            cout   << "Reservation for seat: "  << seatID  << " canceled."  << endl;
             return;
         }
     }
-    cout << "No passenger found in seat " << seatID << endl;
+    cout  << "No passenger found in seat: "  << seatID << endl;
 }
 // Yolcu sayısını döndür listenin büyüklüğünü döndürmemin sebebi eğer memory alloc yapılamazsa
 int Flight::numberOfPassengers() const {return passangers.size();}
@@ -263,15 +265,15 @@ void FlightManager::addFlight(const Flight& flight)
         {
             if(flight.getNo() == flights.at(i).getNo())
             {
-                cout << "A flight like this already exists." << endl;
+                cout  << "A flight like this already exists."  << endl;
                 return;
             }
         }
             flights.push_back(flight);
-            cout << "flight added successfully" << endl;
+            cout  << "flight added successfully" << endl;
     }catch(const out_of_range& e)
     {
-        cout << "Error: " << e.what() << endl;
+        cout  << "Error: " << e.what()  << endl;
     }
 }
 // Uçuş kaldırma
@@ -284,15 +286,15 @@ void FlightManager::removeFlight(const string& FlightNumber)
         {
             try{
                 flights.delete_at(i);
-                cout << "flight deleted successfully" << endl;
+                cout  << "flight deleted successfully" << endl;
                 return;
             }catch(const out_of_range& e)
             {
-                cout << "Error: " << e.what() << endl;
+                cout  << "Error: " << e.what()  << endl;
             }
         }
     }
-    cout << "There is no flight with tihs flight number: " << FlightNumber << endl;
+    cout  << "There is no flight with tihs flight number: "  << FlightNumber << endl;
 }
 // Tüm uçuşları yazdırırı
 void FlightManager::listAllFlights()
@@ -314,7 +316,7 @@ Flight* FlightManager::getFlightByNumber(const string& FlightNumber)
                 return &flights.at(i);
         }
     }
-    cout << "A flight with this flight number does not exists" << endl;
+    cout  << "A flight with this flight number does not exists"  << endl;
     return nullptr;
 }
 // Varış noktasıyla Uçuş Arar yoksa hata verir
@@ -327,7 +329,7 @@ Flight* FlightManager::getFlightByDestination(const string& Destination)
                 return &flights.at(i);
         }
     }
-    cout << "A flight to this destination does not exists" << endl;
+    cout  << "A flight to this destination does not exists"  << endl;
     return nullptr;
 }
 // Uçuş menüsü
@@ -336,42 +338,50 @@ void flight_menu(Flight* flight)
     int choice;
     // 4 girilene kadar menüde kal
     while (true) {
-        cout << "Second-Level Menu: Passanger Management(For a Selected Flight)" << endl;
+        cout << endl <<"Second-Level Menu: Passanger Management(For a Selected Flight)"<< endl;
         do {
-            cout << "1. Reserve a Seat(By displaying seating plan)"<< endl
+            cout   << "1. Reserve a Seat(By displaying seating plan)"<< endl
             <<"2. Cancel Reservation" << endl
             <<"3. View Passenger List" << endl
             <<"4. Back To Flight Management Menu" << endl
-            << ": ";
+            << ": " ;
+            
             cin >> choice;
+            
+            if(choice < 1 || choice > 4)
+                cout  << "Invalid Operation."  << endl;
+            
         } while (choice < 1 || choice > 4);
         string seat, name, surname;
         char gender;
         switch (choice) {
             case 1:
-                cin.ignore(1000, '\n');
                 // Yolcu bilgilerini gir
                 flight->flightDisplay();
+                cin.ignore(1000, '\n');
                 cout << "Enter Passengers Name: ";
                 getline(cin, name);
                 cout << "Enter Passengers Surname: ";
                 getline(cin, surname);
                 do {
-                    cout << "Enter Passengers Gender(Uppercase)(M for Male, F for Female, O for Other): ";
+                    cout << "Enter Passengers Gender(M for Male, F for Female, O for Other): ";
                     cin >> seat;
                     gender = toupper(static_cast<unsigned char>(seat[0]));
                     if(gender != 'M' && gender != 'F' && gender != 'O')
                     {
-                        cout << "Please enter a valid gender." << endl;
+                        cout  << "Please enter a valid gender."  << endl;
                     }
                 } while (gender != 'M' && gender != 'F' && gender != 'O');
                 seat = "";
+                cin.clear();
+                cin.ignore(1000, '\n');
                 flight->reserveSeat(Passenger(name, surname, gender));
                 break;
             case 2:
                 flight->flightDisplay();
                 cout << "Enter the seat Id for the passenger: ";
                 cin >> seat;
+                transform(seat.begin(), seat.end(), seat.begin(), ::toupper);
                 flight->cancelReservation(seat);
                 break;
             case 3:
@@ -391,18 +401,19 @@ void top_level_menu()
     {
         int choice;
         do {
-            cout << "Top-Level Menu: Flight Management" << endl
+            cout << endl << "Top-Level Menu: Flight Management" << endl
             << "1. Add a Flight" << endl
             << "2. Remove a Flight" << endl
             << "3. List All Flights" << endl
             << "4. Select a Flight and Manage passengers" << endl
             << "5. Exit" << endl
-            <<": ";
+            <<": " ;
             
             cin >> choice;
+            getchar();
             if(choice > 5 || choice < 1)
             {
-                cout << "Invalid operation" << endl;
+                cout  << "Invalid operation"  << endl;
             }
         } while (choice > 5 || choice < 1);
         string flightdest;
@@ -421,7 +432,7 @@ void top_level_menu()
                         cin >> prefix;
                         if(prefix <0 || prefix > 3)
                         {
-                            cout << "Invalid choice" << endl;
+                            cout  << "Invalid choice"  << endl;
                         }
                         if(prefix == 0)
                             flightNo = "LJ";
@@ -439,7 +450,7 @@ void top_level_menu()
                     // kullanıcının harf ya da 3 den fazla rakamlı sayı girmesini engelle
                     if(!all_of(temp.begin(), temp.end(), ::isdigit) || temp.length() != 3)
                     {
-                        cout <<"Rest of the flight Number must be numbers with the length of 3." << endl;
+                        cout  <<"Rest of the flight Number must be numbers with the length of 3."  << endl;
                         continue;
                     }
                     flightNo = flightNo + temp;
@@ -452,7 +463,7 @@ void top_level_menu()
                     cin >> passangers;
                    if(seats > 80 || seats <= 0 || seats < passangers)
                     {
-                        cout << "Invalid Passenger/Seat input." << endl;
+                        cout  << "Invalid Passenger/Seat input."  << endl;
                     }
                     else
                     {
@@ -465,6 +476,8 @@ void top_level_menu()
             case 2:
                 cout << "Enter the flight number of the flight you want to delete: ";
                 cin >> flightNo;
+                // stringi büyük harflere çevir: lj111 -> LJ111
+                transform(flightNo.begin(), flightNo.end(), flightNo.begin() ,::toupper);
                 manager.removeFlight(flightNo);
                 break;
             case 3:
@@ -473,6 +486,7 @@ void top_level_menu()
             case 4:
                 cout << "Enter Flight Number of the flight: ";
                 cin >> flightNo;
+                transform(flightNo.begin(), flightNo.end(), flightNo.begin() ,::toupper);
                 if(manager.getFlightByNumber(flightNo) != nullptr)
                     flight_menu(manager.getFlightByNumber(flightNo));
                 break;
